@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -15,6 +15,10 @@ Route::prefix('auth')->group(function () {
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::post('/update-profile-picture', [AuthController::class, 'updateProfilePicture']);
+            Route::post('/verify-old-password-v2', [AuthController::class, 'verifyOldPasswordV2']);
+            Route::post('/reset-password-v2', [AuthController::class, 'resetPasswordV2'])
+                ->middleware(['password.verified']);
+            Route::get('/profile', [AuthController::class, 'getProfile']);
         });
     });
 });
