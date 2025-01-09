@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Helpers\ViewVerificationHelper;
 use App\Models\User;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -109,23 +111,68 @@ class AuthController extends Controller
         $user = User::findOrFail($id);
 
         if (!hash_equals(sha1($user->email), $request->hash)) {
-            return response()->json([
-                'message' => 'Link verifikasi tidak valid'
-            ], 400);
+            return response(ViewVerificationHelper::emailVerificationPage('error', 'Link verifikasi tidak valid'))
+                ->header('Content-Type', 'text/html');
         }
 
         if ($user->email_verified_at) {
-            return response()->json([
-                'message' => 'Email sudah terverifikasi'
-            ]);
+            return response(ViewVerificationHelper::emailVerificationPage('success', 'Email sudah terverifikasi sebelumnya'))
+                ->header('Content-Type', 'text/html');
         }
 
-        $user->email_verified_at = Carbon::now();
+        $user->email_verified_at = now();
         $user->save();
 
-        return response()->json([
-            'message' => 'Email berhasil diverifikasi'
+        return response(ViewVerificationHelper::emailVerificationPage('success'))
+            ->header('Content-Type', 'text/html');
+    }
+    public function verifyOldPasswordV2(Request $request)
+    {
+        $request->validate([
+            'old_password' => 'required|string',
         ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->old_password, $user->password)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Password lama tidak cocok.',
+            ], 400);
+        }
+
+        session(['password_verified' => true]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password lama cocok. Silakan masukkan password baru.',
+        ], 200);
+    }
+
+    public function resetPasswordV2(Request $request)
+    {
+        $request->validate([
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if (!session('password_verified')) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Anda belum memverifikasi password lama.',
+            ], 403);
+        }
+
+        $user = $request->user();
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        session()->forget('password_verified');
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password berhasil diperbarui.',
+        ], 200);
     }
 
     public function forgotPassword(Request $request)
@@ -195,6 +242,22 @@ class AuthController extends Controller
             'message' => 'Password berhasil direset'
         ]);
     }
+
+    public function getProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $user->profile_picture_url = $user->profile_picture === 'default.jpg'
+            ? asset("storage/profile_picture/default.jpg")
+            : asset("storage/profile_picture/{$user->profile_picture}");
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Profil pengguna berhasil diambil.',
+            'user' => $user,
+        ], 200);
+    }
+
 
     public function updateProfilePicture(Request $request)
     {
