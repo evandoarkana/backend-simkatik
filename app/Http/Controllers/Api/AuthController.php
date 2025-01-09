@@ -24,14 +24,12 @@ class AuthController extends Controller
             'profile_picture' => 'image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
-        // Create user
         $user = new User();
         $user->username = $request->username;
         $user->email = $request->email;
         $user->password = Hash::make($request->password);
         $user->profile_picture = 'default.jpg';
 
-        // Handle profile picture upload if provided
         if ($request->hasFile('profile_picture')) {
             $file = $request->file('profile_picture');
             $filename = time() . '_' . $file->getClientOriginalName();
@@ -41,7 +39,6 @@ class AuthController extends Controller
 
         $user->save();
 
-        // Generate verification URL
         $verificationUrl = URL::temporarySignedRoute(
             'verification.verify',
             Carbon::now()->addMinutes(60),
@@ -51,10 +48,8 @@ class AuthController extends Controller
             ]
         );
 
-        // Send verification email
         EmailHelper::sendVerificationEmail($user->email, $user->username, $verificationUrl);
 
-        // Generate token for API
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -73,21 +68,18 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        // Check if user exists
         if (!$user) {
             return response()->json([
                 'message' => 'Email atau password salah'
             ], 401);
         }
 
-        // Check if email is verified
         if (!$user->email_verified_at) {
             return response()->json([
                 'message' => 'Email belum diverifikasi'
             ], 403);
         }
 
-        // Check password
         if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'message' => 'Email atau password salah'
@@ -150,10 +142,8 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Generate reset token
         $token = Str::random(64);
 
-        // Save token to database
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $user->email],
             [
@@ -162,7 +152,6 @@ class AuthController extends Controller
             ]
         );
 
-        // Generate reset URL
         $resetUrl = config('app.frontend_url') . '/reset-password?token=' . $token;
 
         EmailHelper::sendResetPasswordEmail($user->email, $user->username, $resetUrl);
@@ -189,7 +178,6 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Check if token is expired (60 minutes)
         if (Carbon::parse($resetToken->created_at)->addMinutes(60)->isPast()) {
             DB::table('password_reset_tokens')->where('token', $request->token)->delete();
             return response()->json([
@@ -216,12 +204,10 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        // Delete old profile picture if not default
         if ($user->profile_picture !== 'default.jpg') {
             Storage::delete('public/profile_picture/' . $user->profile_picture);
         }
 
-        // Upload new profile picture
         $file = $request->file('profile_picture');
         $filename = time() . '_' . $file->getClientOriginalName();
         $file->storeAs('public/profile_picture', $filename);
