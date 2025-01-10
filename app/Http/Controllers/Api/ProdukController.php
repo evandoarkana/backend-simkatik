@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Produk;
-use Barryvdh\DomPDF\Facade as PDF;  // Pastikan menggunakan alias PDF
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class ProdukController extends Controller
 {
@@ -19,15 +20,14 @@ class ProdukController extends Controller
                 'message' => 'Tidak ada produk yang tersedia.',
             ], 404);
         }
-    
+
         return response()->json($produk, 200);
     }
-    
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'gambar_produk' => 'required|string',
+            'gambar_produk' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'nama_produk' => 'required|string',
             'id_kategori' => 'required|exists:kategori,id',
             'harga_jual' => 'required|integer',
@@ -39,9 +39,25 @@ class ProdukController extends Controller
             return response()->json($validator->errors(), 400);
         }
 
-        $produk = Produk::create($request->all());
-        return response()->json($produk, 201);
+        if ($request->hasFile('gambar_produk')) {
+            $path = $request->file('gambar_produk')->store('barang_picture', 'public');
+        }
+
+        $produk = Produk::create([
+            'gambar_produk' => $path,
+            'nama_produk' => $request->nama_produk,
+            'id_kategori' => $request->id_kategori,
+            'harga_jual' => $request->harga_jual,
+            'harga_beli' => $request->harga_beli,
+            'stok' => $request->stok,
+        ]);
+
+        return response()->json([
+            "message" => "Produk berhasil ditambahkan",
+            "data" => $produk
+        ], 201);
     }
+
 
     public function update(Request $request, $id)
     {
@@ -77,20 +93,21 @@ class ProdukController extends Controller
 
         return response()->json($produk);
     }
-    public function printPdf($id)
+    public function printPdf()
     {
-        $produk = Produk::find($id);
+        $produk = Produk::all();
 
-        if (!$produk) {
-            return response()->json(['message' => 'Produk tidak ditemukan'], 404);
+        if ($produk->isEmpty()) {
+            return response()->json(['message' => 'Tidak ada produk yang ditemukan.'], 404);
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('produk.pdf', compact('produk'));
+        $pdf = Pdf::loadView('produk.pdf', compact('produk'));
 
         if (request()->query('action') === 'download') {
-            return $pdf->download("produk_{$produk->id}.pdf");
+            return $pdf->download("laporan_semua_produk.pdf");
         }
 
-        return $pdf->stream("produk_{$produk->id}.pdf");
+        return $pdf->stream("laporan_semua_produk.pdf");
     }
+
 }
