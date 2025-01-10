@@ -32,7 +32,6 @@
 
         .logo-container img {
             width: 200px;
-            /* Ukuran logo */
             height: auto;
         }
 
@@ -95,7 +94,6 @@
 </head>
 
 <body>
-    <!-- Logo dan Header -->
     <div class="logo-container">
         <img src="{{ public_path('images/logo-simkatik.png') }}" alt="Logo">
     </div>
@@ -109,7 +107,6 @@
         @endif
     </p>
 
-    <!-- Tabel Penjualan -->
     <table>
         <thead>
             <tr>
@@ -135,18 +132,16 @@
                     <td class="text-center">{{ \Carbon\Carbon::parse($item->tanggal_terjual)->format('d-m-Y') }}</td>
                 </tr>
                 @php
-                    $total_keuntungan += $item->keuntungan; // Menambahkan keuntungan per transaksi ke total keuntungan
+                    $total_keuntungan += $item->keuntungan; 
                 @endphp
             @endforeach
         </tbody>
     </table>
 
-    <!-- Total Keuntungan di bawah tabel -->
     <div class="total-keuntungan">
         <p>Total Keuntungan: Rp {{ number_format($total_keuntungan, 0, ',', '.') }}</p>
     </div>
 
-    <!-- Footer -->
     <div class="footer">
         <p>SIMKATIK - Sistem Manajemen Toko Kosmetik</p>
         <p>&copy; {{ date('Y') }} All Rights Reserved</p>

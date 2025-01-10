@@ -25,7 +25,6 @@
 
         .logo-container img {
             width: 200px;
-            /* Ukuran logo */
             height: auto;
         }
 
@@ -35,7 +34,6 @@
             margin-top: 20px;
             font-size: 14px;
             table-layout: fixed;
-            /* Mengatur agar kolom memiliki lebar tetap */
         }
 
         table,
@@ -50,20 +48,16 @@
             font-weight: bold;
             text-transform: uppercase;
             text-align: center;
-            /* Header rata tengah */
             padding: 12px;
             white-space: nowrap;
-            /* Mencegah teks header terpotong */
         }
 
         td {
             padding: 10px;
             text-align: left;
             word-wrap: break-word;
-            /* Membungkus teks panjang */
         }
 
-        /* Kolom spesifik */
         td.text-right {
             text-align: right;
         }
@@ -80,17 +74,14 @@
             border-radius: 5px;
         }
 
-        /* Lebar kolom disesuaikan */
         th:first-child,
         td:first-child {
             width: 15%;
-            /* Gambar */
         }
 
         th:nth-child(2),
         td:nth-child(2) {
             width: 30%;
-            /* Nama Produk */
         }
 
         th:nth-child(3),
@@ -100,7 +91,6 @@
         th:nth-child(5),
         td:nth-child(5) {
             width: 15%;
-            /* Harga Jual, Harga Beli, Stok */
             text-align: center;
         }
 
@@ -118,7 +108,6 @@
 </head>
 
 <body>
-    <!-- Logo dan Header -->
     <div class="logo-container">
         <img src="{{ public_path('images/logo-simkatik.png') }}" alt="Logo">
     </div>
@@ -152,7 +141,6 @@
         </tbody>
     </table>
 
-    <!-- Footer -->
     <div class="footer">
         <p>SIMKATIK - Sistem Manajemen Toko Kosmetik</p>
         <p>&copy; {{ date('Y') }} All Rights Reserved</p>
