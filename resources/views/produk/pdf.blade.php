@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Semua Produk</title>
+    <title>Laporan Produk</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -36,12 +36,13 @@
             color: #333;
             font-weight: bold;
             text-transform: uppercase;
+            text-align: center;
+            /* Header tabel rata tengah */
         }
 
         th,
         td {
             padding: 10px;
-            text-align: left;
         }
 
         td img {
@@ -103,7 +104,7 @@
                     <td>{{ $item->nama_produk }}</td>
                     <td>Rp {{ number_format($item->harga_jual, 0, ',', '.') }}</td>
                     <td>Rp {{ number_format($item->harga_beli, 0, ',', '.') }}</td>
-                    <td>{{ $item->stok }}</td>
+                    <td class="text-center">{{ $item->stok }}</td>
                 </tr>
             @endforeach
         </tbody>
