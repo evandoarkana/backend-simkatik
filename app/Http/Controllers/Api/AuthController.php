@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -106,6 +108,110 @@ class AuthController extends Controller
         ]);
     }
 
+    public function getProfile(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            $profilePictureUrl = null;
+            if ($user->profile_picture) {
+                $profilePictureUrl = $user->profile_picture === 'default.jpg'
+                    ? asset('storage/profile_picture/default.jpg')
+                    : Storage::url("public/profile_picture/{$user->profile_picture}");
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data profil berhasil dimuat',
+                'data' => [
+                    'user' => $user,
+                    'profile_picture_url' => $profilePictureUrl
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateProfilePicture(Request $request)
+    {
+        try {
+            Log::info('Start update profile picture');
+
+            $validator = Validator::make($request->all(), [
+                'profile_picture' => [
+                    'required',
+                    'image',
+                    'mimes:jpeg,png,jpg',
+                    'max:2048',
+                ]
+            ]);
+
+            if ($validator->fails()) {
+                Log::error('Validation failed:', $validator->errors()->toArray());
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            Log::info('Validation passed');
+
+            $user = $request->user();
+            Log::info('User data:', ['user' => $user]);
+
+            if ($user->profile_picture && $user->profile_picture !== 'default.jpg') {
+                Log::info('Attempting to delete old profile picture:', ['old_picture' => $user->profile_picture]);
+                Storage::delete("public/profile_picture/{$user->profile_picture}");
+            }
+
+            $file = $request->file('profile_picture');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            Log::info('New filename:', ['filename' => $filename]);
+
+            $path = $file->storeAs('public/profile_picture', $filename);
+            Log::info('File stored at:', ['path' => $path]);
+
+            $user->profile_picture = $filename;
+            $user->save();
+            Log::info('User updated with new profile picture');
+
+            $response = [
+                'status' => 'success',
+                'message' => 'Foto profil berhasil diperbarui',
+                'data' => [
+                    'user' => $user,
+                    'profile_picture_url' => Storage::url("public/profile_picture/{$filename}")
+                ]
+            ];
+
+            Log::info('Sending response:', $response);
+            return response()->json($response, 200);
+
+        } catch (\Exception $e) {
+            Log::error('Exception occurred:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -358,6 +464,59 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Kode verifikasi baru telah dikirim ke email Anda.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    public function resetPassword(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'reset_token' => 'required|string',
+                'password' => 'required|string|min:8|confirmed',
+                'password_confirmation' => 'required|string|min:8'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $email = Cache::get("reset_password_{$request->reset_token}");
+
+            if (!$email) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Token reset password tidak valid atau telah kadaluarsa.'
+                ], 401);
+            }
+
+            $user = User::where('email', $email)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Pengguna tidak ditemukan.'
+                ], 404);
+            }
+
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            Cache::forget("reset_password_{$request->reset_token}");
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Password berhasil diubah.'
             ]);
 
         } catch (\Exception $e) {
