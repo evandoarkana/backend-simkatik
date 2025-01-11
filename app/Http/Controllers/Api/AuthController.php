@@ -6,25 +6,33 @@ use App\Helpers\ViewVerificationHelper;
 use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Helpers\EmailHelper;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 
 class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'username' => 'required|unique:users,username',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8',
             'profile_picture' => 'image|mimes:jpeg,png,jpg|max:2048'
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal melakukan registrasi',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
         $user = new User();
         $user->username = $request->username;
@@ -55,6 +63,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
+            'status' => 'success',
             'message' => 'Registrasi berhasil, silakan cek email untuk verifikasi',
             'user' => $user,
             'token' => $token
@@ -126,6 +135,7 @@ class AuthController extends Controller
         return response(ViewVerificationHelper::emailVerificationPage('success'))
             ->header('Content-Type', 'text/html');
     }
+
     public function verifyOldPasswordV2(Request $request)
     {
         $request->validate([
@@ -174,113 +184,187 @@ class AuthController extends Controller
             'message' => 'Password berhasil diperbarui.',
         ], 200);
     }
-
     public function forgotPassword(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email'
+            ]);
 
-        $user = User::where('email', $request->email)->first();
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-        if (!$user) {
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Email tidak ditemukan'
+                ], 404);
+            }
+
+            $resetToken = Str::random(32);
+            $verificationCode = Str::random(6);
+
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $user->email],
+                [
+                    'token' => $verificationCode,
+                    'created_at' => Carbon::now()
+                ]
+            );
+
+            Cache::put("reset_password_{$resetToken}", $user->email, now()->addMinutes(30));
+
+            $emailSent = EmailHelper::sendResetPasswordVerificationEmail($user->email, $user->username, $verificationCode);
+
+            if (!$emailSent) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal mengirim kode verifikasi ke email Anda'
+                ], 500);
+            }
+
             return response()->json([
-                'message' => 'Email tidak ditemukan'
-            ], 404);
+                'status' => 'success',
+                'message' => 'Kode verifikasi telah dikirim ke email Anda.',
+                'reset_token' => $resetToken
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        $token = Str::random(64);
-
-        DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $user->email],
-            [
-                'token' => $token,
-                'created_at' => Carbon::now()
-            ]
-        );
-
-        $resetUrl = config('app.frontend_url') . '/reset-password?token=' . $token;
-
-        EmailHelper::sendResetPasswordEmail($user->email, $user->username, $resetUrl);
-
-        return response()->json([
-            'message' => 'Link reset password telah dikirim ke email'
-        ]);
     }
 
-    public function resetPassword(Request $request)
+    public function verifyVerificationCode(Request $request)
     {
-        $request->validate([
-            'token' => 'required',
-            'password' => 'required|min:8|confirmed'
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'reset_token' => 'required|string',
+                'verification_code' => 'required|string|size:6',
+            ]);
 
-        $resetToken = DB::table('password_reset_tokens')
-            ->where('token', $request->token)
-            ->first();
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-        if (!$resetToken) {
+            $email = Cache::get("reset_password_{$request->reset_token}");
+
+
+            if (!$email) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Token reset password tidak valid atau telah kadaluarsa.'
+                ], 401);
+            }
+
+            $tokenData = DB::table('password_reset_tokens')
+                ->where('email', $email)
+                ->first();
+
+            if (!$tokenData) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Kode verifikasi tidak ditemukan.'
+                ], 404);
+            }
+
+            if ($tokenData->token !== $request->verification_code) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Kode verifikasi tidak valid.'
+                ], 400);
+            }
+
+            $expiryTime = Carbon::parse($tokenData->created_at)->addMinutes(30);
+            if (Carbon::now()->greaterThan($expiryTime)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Kode verifikasi telah kedaluwarsa.'
+                ], 400);
+            }
+
             return response()->json([
-                'message' => 'Token reset password tidak valid'
-            ], 400);
-        }
+                'status' => 'success',
+                'message' => 'Kode verifikasi valid. Silakan lanjutkan dengan reset password.',
+                'reset_token' => $request->reset_token
+            ]);
 
-        if (Carbon::parse($resetToken->created_at)->addMinutes(60)->isPast()) {
-            DB::table('password_reset_tokens')->where('token', $request->token)->delete();
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Token reset password sudah kadaluarsa'
-            ], 400);
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        $user = User::where('email', $resetToken->email)->first();
-        $user->password = Hash::make($request->password);
-        $user->save();
-
-        DB::table('password_reset_tokens')->where('token', $request->token)->delete();
-
-        return response()->json([
-            'message' => 'Password berhasil direset'
-        ]);
     }
 
-    public function getProfile(Request $request)
+
+    public function resendVerificationCode(Request $request)
     {
-        $user = $request->user();
+        try {
+            $validator = Validator::make($request->all(), [
+                'reset_token' => 'required|string'
+            ]);
 
-        $user->profile_picture_url = $user->profile_picture === 'default.jpg'
-            ? asset("storage/profile_picture/default.jpg")
-            : asset("storage/profile_picture/{$user->profile_picture}");
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Profil pengguna berhasil diambil.',
-            'user' => $user,
-        ], 200);
-    }
+            $email = Cache::get("reset_password_{$request->reset_token}");
 
+            if (!$email) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Token reset password tidak valid atau telah kadaluarsa.'
+                ], 401);
+            }
 
-    public function updateProfilePicture(Request $request)
-    {
-        $request->validate([
-            'profile_picture' => 'required|image|mimes:jpeg,png,jpg|max:2048'
-        ]);
+            $user = User::where('email', $email)->first();
+            $verificationCode = Str::random(6);
 
-        $user = $request->user();
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $email],
+                [
+                    'token' => $verificationCode,
+                    'created_at' => Carbon::now()
+                ]
+            );
 
-        if ($user->profile_picture !== 'default.jpg') {
-            Storage::delete('public/profile_picture/' . $user->profile_picture);
+            $emailSent = EmailHelper::sendResetPasswordVerificationEmail($user->email, $user->username, $verificationCode);
+
+            if (!$emailSent) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal mengirim ulang kode verifikasi'
+                ], 500);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Kode verifikasi baru telah dikirim ke email Anda.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        $file = $request->file('profile_picture');
-        $filename = time() . '_' . $file->getClientOriginalName();
-        $file->storeAs('public/profile_picture', $filename);
-
-        $user->profile_picture = $filename;
-        $user->save();
-
-        return response()->json([
-            'message' => 'Foto profil berhasil diperbarui',
-            'user' => $user
-        ]);
     }
 }
