@@ -12,6 +12,25 @@ use Illuminate\Support\Facades\DB;
 
 class PenjualanController extends Controller
 {
+
+    public function index(Request $request)
+    {
+        $tahun = $request->query('tahun');
+        $bulan = $request->query('bulan');
+        $query = Penjualan::with('produk');
+        if ($tahun) {
+            $query->whereYear('tanggal_terjual', $tahun);
+        }
+        if ($bulan) {
+            $query->whereMonth('tanggal_terjual', $bulan);
+        }
+        $penjualan = $query->get();
+        if ($penjualan->isEmpty()) {
+            return response()->json(['message' => 'Tidak ada data penjualan yang ditemukan.'], 404);
+        }
+        return response()->json($penjualan, 200);
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
