@@ -14,7 +14,7 @@ Route::prefix('auth')->group(function () {
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
 
-        // Password reset 
+        // Password reset
         Route::middleware(['throttle:6,1'])->group(function () {
             Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
             Route::post('/verify-verification-code', [AuthController::class, 'verifyVerificationCode']);
