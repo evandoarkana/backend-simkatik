@@ -11,12 +11,20 @@ use Illuminate\Support\Facades\Validator;
 
 class PembelianController extends Controller
 {
+    public function index()
+    {
+        $pembelian = Pembelian::with('produk')->get();
+
+        return response()->json($pembelian);
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'id_produk' => 'required|exists:produk,id',
             'unit' => 'required|integer|min:1',
             'harga_beli' => 'required|integer',
+            'tanggal_dibeli' => 'required|date',
         ]);
 
         if ($validator->fails()) {
@@ -24,6 +32,12 @@ class PembelianController extends Controller
         }
 
         $produk = Produk::find($request->id_produk);
+
+        $harga_beli_terbaru = Pembelian::where('id_produk', $produk->id)->latest('created_at')->value('harga_beli') ?? 0;
+
+        if ($produk->harga_beli !== $harga_beli_terbaru) {
+            $produk->harga_beli = $harga_beli_terbaru;
+        }
 
         $produk->stok += $request->unit;
         $produk->save();
@@ -33,7 +47,7 @@ class PembelianController extends Controller
             'unit' => $request->unit,
             'harga_beli' => $request->harga_beli,
             'total_harga' => $request->unit * $request->harga_beli,
-            'tanggal_dibeli' => now(),
+            'tanggal_dibeli' => $request->tanggal_dibeli,
         ]);
 
         return response()->json([

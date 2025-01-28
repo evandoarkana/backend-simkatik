@@ -27,14 +27,11 @@ class ProdukController extends Controller
 
     public function store(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'gambar_produk' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'nama_produk' => 'required|string',
+            'nama_produk' => 'required|string|unique:produk,nama_produk',
             'id_kategori' => 'required|exists:kategori,id',
             'harga_jual' => 'required|integer',
-            'harga_beli' => 'required|integer',
-            'stok' => 'required|integer',
         ]);
 
         if ($validator->fails()) {
@@ -52,16 +49,16 @@ class ProdukController extends Controller
             'nama_produk' => $request->nama_produk,
             'id_kategori' => $request->id_kategori,
             'harga_jual' => $request->harga_jual,
-            'harga_beli' => $request->harga_beli,
-            'stok' => $request->stok,
+            'stok' => 0,
         ]);
+
+        $harga_beli_terbaru = Pembelian::where('id_produk', $produk->id)->latest('created_at')->value('harga_beli') ?? 0;
 
         Pembelian::create([
             'id_produk' => $produk->id,
             'unit' => $produk->stok,
-            'harga_beli' => $produk->harga_beli,
-            'total_harga' => $produk->harga_beli * $produk->stok,
-            'tanggal_dibeli' => now(),
+            'harga_beli' => $harga_beli_terbaru,
+            'total_harga' => $harga_beli_terbaru * $produk->stok,
         ]);
 
         return response()->json([
@@ -78,14 +75,17 @@ class ProdukController extends Controller
             return response()->json(['message' => 'Produk tidak ditemukan'], 404);
         }
 
-        $stok_lama = $produk->stok;
-        $stok_baru = $request->input('stok');
+        $validator = Validator::make($request->all(), [
+            'harga_jual' => 'required|integer',
+        ]);
 
-        $produk->update($request->all());
-
-        if ($stok_baru > $stok_lama) {
-            $selisih_stok = $stok_baru - $stok_lama;
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
         }
+
+        $produk->update([
+            'harga_jual' => $request->harga_jual,
+        ]);
 
         return response()->json($produk);
     }
@@ -101,30 +101,6 @@ class ProdukController extends Controller
         $produk->delete();
 
         return response()->json(['message' => 'Produk berhasil dihapus']);
-    }
-
-    public function tambahStok(Request $request, $id)
-    {
-        $produk = Produk::find($id);
-        if (!$produk) {
-            return response()->json(['message' => 'Produk tidak ditemukan'], 404);
-        }
-
-        $stok_lama = $produk->stok;
-        $stok_baru = $stok_lama + $request->input('stok');
-
-        $produk->stok = $stok_baru;
-        $produk->save();
-
-        Pembelian::create([
-            'id_produk' => $produk->id,
-            'unit' => $request->input('stok'),
-            'harga_beli' => $produk->harga_beli,
-            'total_harga' => $produk->harga_beli * $request->input('stok'),
-            'tanggal_dibeli' => now(),
-        ]);
-
-        return response()->json($produk);
     }
 
     public function printPdf()
