@@ -59,10 +59,13 @@ Route::prefix('auth')->group(function () {
             Route::apiResource('produk', ProdukController::class);
             Route::put('produk/{id}/tambah-stok', [ProdukController::class, 'tambahStok']);
 
-            // Penjualan & Pembelian routes
+            // Penjualan routes
             Route::get('penjualan', [PenjualanController::class, 'index']);
             Route::post('penjualan', [PenjualanController::class, 'store']);
+
+            // pembelian routes
             Route::get('pembelian', [PembelianController::class, 'index']);
+            Route::post('pembelian', [PembelianController::class, 'store']);
         });
     });
 });
