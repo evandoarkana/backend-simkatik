@@ -242,10 +242,11 @@ class AuthController extends Controller
             ->header('Content-Type', 'text/html');
     }
 
-    public function verifyOldPasswordV2(Request $request)
+    public function resetPasswordV2(Request $request)
     {
         $request->validate([
             'old_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = $request->user();
@@ -257,39 +258,15 @@ class AuthController extends Controller
             ], 400);
         }
 
-        session(['password_verified' => true]);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Password lama cocok. Silakan masukkan password baru.',
-        ], 200);
-    }
-
-    public function resetPasswordV2(Request $request)
-    {
-        $request->validate([
-            'new_password' => 'required|string|min:8|confirmed',
-        ]);
-
-        if (!session('password_verified')) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Anda belum memverifikasi password lama.',
-            ], 403);
-        }
-
-        $user = $request->user();
-
         $user->password = Hash::make($request->new_password);
         $user->save();
-
-        session()->forget('password_verified');
 
         return response()->json([
             'status' => true,
             'message' => 'Password berhasil diperbarui.',
         ], 200);
     }
+
     public function forgotPassword(Request $request)
     {
         try {

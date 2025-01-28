@@ -38,9 +38,7 @@ Route::prefix('auth')->group(function () {
             Route::get('/profile', [AuthController::class, 'getProfile']);
 
             // Password change routes
-            Route::post('/verify-old-password-v2', [AuthController::class, 'verifyOldPasswordV2']);
-            Route::post('/reset-password-v2', [AuthController::class, 'resetPasswordV2'])
-                ->middleware(['password.verified']);
+            Route::post('/reset-password-v2', [AuthController::class, 'resetPasswordV2']);
 
             // Dashboard routes
             Route::prefix('dashboard')->group(function () {
