@@ -62,7 +62,7 @@ class ProdukController extends Controller
         ]);
 
         return response()->json([
-            "message" => "Produk berhasil ditambahkan dan pembelian dicatat",
+            "message" => "Produk berhasil ditambahkan",
             "data" => $produk
         ], 201);
     }
