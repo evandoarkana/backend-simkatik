@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pembelian;
 use App\Models\Produk;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -24,7 +25,18 @@ class PembelianController extends Controller
             'id_produk' => 'required|exists:produk,id',
             'unit' => 'required|integer|min:1',
             'harga_beli' => 'required|integer',
-            'tanggal_dibeli' => 'required|date',
+            'tanggal_dibeli' => [
+                'required',
+                'date',
+                function ($attribute, $value, $fail) {
+                    $tanggal = Carbon::parse($value);
+                    $hariIni = now();
+
+                    if ($tanggal->gt($hariIni)) {
+                        $fail('Tanggal dibeli tidak boleh melebihi hari ini.');
+                    }
+                }
+            ],
         ]);
 
         if ($validator->fails()) {
@@ -51,38 +63,11 @@ class PembelianController extends Controller
         ]);
 
         return response()->json([
-            "message" => "Pembelian berhasil ditambahkan dan stok diperbarui",
+            "message" => "Pembelian berhasil",
             "data" => $produk
         ], 201);
     }
 
-    public function update(Request $request, $id)
-    {
-        $produk = Produk::find($id);
-
-        if (!$produk) {
-            return response()->json(['message' => 'Produk tidak ditemukan'], 404);
-        }
-
-        $stok_lama = $produk->stok;
-        $stok_baru = $request->input('stok');
-
-        $produk->update($request->all());
-
-        if ($stok_baru > $stok_lama) {
-            $selisih_stok = $stok_baru - $stok_lama;
-
-            Pembelian::create([
-                'id_produk' => $produk->id,
-                'unit' => $selisih_stok,
-                'harga_beli' => $produk->harga_beli,
-                'total_harga' => $produk->harga_beli * $selisih_stok,
-                'tanggal_dibeli' => now(),
-            ]);
-        }
-
-        return response()->json($produk);
-    }
 
     public function printPdf(Request $request)
     {
