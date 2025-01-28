@@ -14,7 +14,7 @@ Route::prefix('auth')->group(function () {
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
 
-        // Password reset
+        // Forgot password routes
         Route::middleware(['throttle:6,1'])->group(function () {
             Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
             Route::post('/verify-verification-code', [AuthController::class, 'verifyVerificationCode']);
@@ -38,7 +38,7 @@ Route::prefix('auth')->group(function () {
             Route::get('/profile', [AuthController::class, 'getProfile']);
 
             // Password change routes
-            Route::post('/reset-password-v2', [AuthController::class, 'resetPasswordV2']);
+            Route::post('/change-password', [AuthController::class, 'resetPasswordV2']);
 
             // Dashboard routes
             Route::prefix('dashboard')->group(function () {
