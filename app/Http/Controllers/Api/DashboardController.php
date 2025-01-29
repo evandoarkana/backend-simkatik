@@ -60,6 +60,7 @@ class DashboardController extends Controller
             ]
         ]);
     }
+
     public function getTotalProdukTerjual(Request $request)
     {
         $request->validate([
@@ -89,12 +90,20 @@ class DashboardController extends Controller
         try {
             $totalTerjual = $query->sum('unit');
 
+            if ($totalTerjual == 0) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'message' => 'Tidak ada unit yang terjual pada tanggal yang dipilih.'
+                ], 404);
+            }
+
             return response()->json([
                 'status' => 'sukses',
                 'data' => [
                     'total_produk_terjual' => $totalTerjual
                 ]
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'gagal',
