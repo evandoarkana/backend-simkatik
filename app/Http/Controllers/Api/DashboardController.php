@@ -60,18 +60,50 @@ class DashboardController extends Controller
             ]
         ]);
     }
-
-    public function getTotalProdukTerjual()
+    public function getTotalProdukTerjual(Request $request)
     {
-        $totalTerjual = Penjualan::sum('unit');
-
-        return response()->json([
-            'status' => 'sukses',
-            'data' => [
-                'total_produk_terjual' => $totalTerjual
-            ]
+        $request->validate([
+            'tahun' => 'nullable|integer|digits:4',
+            'bulan' => 'nullable|integer|between:1,12',
+            'tanggal' => 'nullable|date',
         ]);
+
+        $tahun = $request->query('tahun');
+        $bulan = $request->query('bulan');
+        $tanggal = $request->query('tanggal');
+
+        $query = Penjualan::query();
+
+        if ($tahun) {
+            $query->whereYear('tanggal_terjual', $tahun);
+        }
+
+        if ($bulan) {
+            $query->whereMonth('tanggal_terjual', $bulan);
+        }
+
+        if ($tanggal) {
+            $query->whereDate('tanggal_terjual', $tanggal);
+        }
+
+        try {
+            $totalTerjual = $query->sum('unit');
+
+            return response()->json([
+                'status' => 'sukses',
+                'data' => [
+                    'total_produk_terjual' => $totalTerjual
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'gagal',
+                'message' => 'Terjadi kesalahan sistem',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
+
 
     public function getSemuaStatistik(Request $request)
     {
@@ -84,7 +116,6 @@ class DashboardController extends Controller
 
         $labaTahunan = Penjualan::whereYear('tanggal_terjual', $tahun)
             ->sum('keuntungan');
-
         $totalProduk = Produk::count();
 
         $totalTerjual = Penjualan::sum('unit');
