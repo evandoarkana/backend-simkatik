@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'password.verified' => \App\Http\Middleware\CheckPasswordVerified::class,
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
 
         $middleware->append([
