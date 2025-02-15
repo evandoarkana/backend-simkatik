@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\UserRole;
 use App\Helpers\ViewVerificationHelper;
 use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,25 +23,37 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
+        if (Auth::user()->role !== UserRole::Admin->value) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Akses ditolak. Hanya admin yang dapat mendaftarkan karyawan.',
+                'code' => 403
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
-            'username' => 'required|unique:users,username',
+            'nama_lengkap' => 'required|string|max:255',
+            'username' => 'required|unique:users,username|regex:/^[a-z0-9_]+$/',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8',
-            'profile_picture' => 'image|mimes:jpeg,png,jpg|max:2048'
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal melakukan registrasi',
-                'errors' => $validator->errors()
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors(),
+                'code' => 422
             ], 422);
         }
 
         $user = new User();
+        $user->nama_lengkap = strtolower($request->nama_lengkap);
         $user->username = $request->username;
         $user->email = $request->email;
         $user->password = Hash::make($request->password);
+        $user->role = UserRole::Karyawan->value;
         $user->profile_picture = 'default.jpg';
 
         if ($request->hasFile('profile_picture')) {
@@ -60,16 +74,35 @@ class AuthController extends Controller
             ]
         );
 
-        EmailHelper::sendVerificationEmail($user->email, $user->username, $verificationUrl);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Registrasi berhasil. Silakan cek email untuk verifikasi.',
+            'data' => [
+                'user' => $user
+            ],
+            'verification_url' => $verificationUrl,
+            'code' => 201
+        ], 201);
+    }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+    public function getAllKaryawan()
+    {
+        $karyawan = User::where('role', UserRole::Karyawan->value)->get();
+
+        if ($karyawan->isEmpty()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tidak ada data karyawan yang ditemukan.',
+                'code' => 404
+            ], 404);
+        }
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Registrasi berhasil, silakan cek email untuk verifikasi',
-            'user' => $user,
-            'token' => $token
-        ], 201);
+            'message' => 'Data karyawan berhasil diambil.',
+            'data' => $karyawan,
+            'code' => 200
+        ], 200);
     }
 
     public function login(Request $request)
@@ -103,9 +136,11 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login berhasil',
-            'user' => $user,
+            'data' => [
+                'user' => $user,
+            ],
             'token' => $token
-        ]);
+        ], 200);
     }
 
     public function getProfile(Request $request)
