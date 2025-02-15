@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
     Route::prefix('users')->group(function () {
-
         Route::post('/login', [AuthController::class, 'login']);
 
         Route::get('/verify-email/{id}/{hash}', [AuthController::class, 'verifyEmail'])
@@ -33,7 +32,6 @@ Route::prefix('auth')->group(function () {
 
         Route::prefix('admin')->group(function () {
             Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
-
                 Route::post('/register/karyawan', [AuthController::class, 'register']);
 
                 Route::prefix('dashboard')->group(function () {
