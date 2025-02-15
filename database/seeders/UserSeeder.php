@@ -12,7 +12,7 @@ class UserSeeder extends Seeder
     public function run()
     {
         User::updateOrCreate([
-            'email' => 'admin@example.com'
+            'email' => 'muhammadnovals334@gmail.com'
         ], [
             'nama_lengkap' => 'Admin User',
             'username' => 'admin',
@@ -22,7 +22,7 @@ class UserSeeder extends Seeder
         ]);
 
         User::updateOrCreate([
-            'email' => 'karyawan@example.com'
+            'email' => 'ibnubilz@gmail.com'
         ], [
             'nama_lengkap' => 'Karyawan User',
             'username' => 'karyawan',
