@@ -18,7 +18,7 @@ class KaryawanController extends Controller
             'message' => 'Daftar karyawan berhasil diambil',
             'data' => [
                 'karyawan' => $karyawan
-            ]
+            ],
         ]);
     }
 
@@ -38,7 +38,7 @@ class KaryawanController extends Controller
             'message' => 'Detail karyawan berhasil diambil',
             'data' => [
                 'karyawan' => $karyawan
-            ]
+            ],
         ]);
     }
 
@@ -78,7 +78,7 @@ class KaryawanController extends Controller
             'message' => 'Karyawan berhasil diperbarui',
             'data' => [
                 'karyawan' => $karyawan
-            ]
+            ],
         ]);
     }
 
