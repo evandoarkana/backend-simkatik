@@ -42,28 +42,35 @@ Route::prefix('auth')->group(function () {
                     Route::get('/all', [DashboardController::class, 'getSemuaStatistik']);
                 });
 
-                Route::get('produk/print-pdf', [ProdukController::class, 'printPdf']);
-                Route::get('penjualan/print-pdf', [PenjualanController::class, 'printPdf']);
-                Route::get('pembelian/print-pdf', [PembelianController::class, 'printPdf']);
+                Route::prefix('kategori')->group(function () {
+                    Route::get('/', [KategoriController::class, 'index']);
+                    Route::get('/{id}', [KategoriController::class, 'show']);
+                    Route::post('/', [KategoriController::class, 'store']);
+                    Route::put('/{id}', [KategoriController::class, 'update']);
+                    Route::delete('/{id}', [KategoriController::class, 'destroy']);
+                });
 
-                Route::get('kategori', [KategoriController::class, 'index']);
-                Route::post('kategori', [KategoriController::class, 'store']);
-                Route::put('kategori/{id}', [KategoriController::class, 'update']);
-                Route::delete('kategori/{id}', [KategoriController::class, 'destroy']);
+                Route::prefix('produk')->group(function () {
+                    Route::get('/', [ProdukController::class, 'index']);
+                    Route::post('/', [ProdukController::class, 'store']);
+                    Route::put('/{id}', [ProdukController::class, 'update']);
+                    Route::delete('/{id}', [ProdukController::class, 'destroy']);
+                    Route::put('/{id}/tambah-stok', [ProdukController::class, 'tambahStok']);
+                    Route::get('/print-pdf', [ProdukController::class, 'printPdf']);
+                });
 
-                Route::apiResource('produk', ProdukController::class);
-                Route::put('produk/{id}/tambah-stok', [ProdukController::class, 'tambahStok']);
+                Route::prefix('penjualan')->group(function () {
+                    Route::get('/', [PenjualanController::class, 'index']);
+                    Route::post('/', [PenjualanController::class, 'store']);
+                    Route::get('/print-pdf', [PenjualanController::class, 'printPdf']);
+                });
 
-                Route::get('penjualan', [PenjualanController::class, 'index']);
-                Route::post('penjualan', [PenjualanController::class, 'store']);
-
-                Route::get('pembelian', [PembelianController::class, 'index']);
-                Route::post('pembelian', [PembelianController::class, 'store']);
-
-                Route::get('kategori/{id}', [KategoriController::class, 'show']);
-
+                Route::prefix('pembelian')->group(function () {
+                    Route::get('/', [PembelianController::class, 'index']);
+                    Route::post('/', [PembelianController::class, 'store']);
+                    Route::get('pembelian/print-pdf', [PembelianController::class, 'printPdf']);
+                });
             });
         });
-
     });
 });
