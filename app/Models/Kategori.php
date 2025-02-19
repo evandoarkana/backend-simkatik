@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Kategori extends Model
 {
-    protected $table = 'Kategori';
-
     use HasFactory;
+
+    protected $table = 'kategori';
 
     protected $fillable = [
         'nama_kategori',
@@ -17,6 +17,6 @@ class Kategori extends Model
 
     public function produk()
     {
-        return $this->hasMany(Produk::class);
+        return $this->hasMany(Produk::class, 'kategori_id');
     }
 }

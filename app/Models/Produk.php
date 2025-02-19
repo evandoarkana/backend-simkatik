@@ -7,29 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 
 class Produk extends Model
 {
-    protected $table = 'Produk';
-
     use HasFactory;
 
+    protected $table = 'produk';
+
     protected $fillable = [
-        'gambar_produk',
         'nama_produk',
-        'id_kategori',
-        'harga_jual',
-        'harga_beli',
+        'kategori_id',
+        'pembelian_id',
         'stok',
+        'harga_jual',
+        'gambar_produk'
     ];
 
     public function kategori()
     {
-        return $this->belongsTo(Kategori::class);
+        return $this->belongsTo(Kategori::class, 'kategori_id');
     }
 
 
 
-    public function pembelians()
+    public function pembelian()
     {
-        return $this->hasMany(Pembelian::class, 'id_produk');
+        return $this->belongsTo(Pembelian::class, 'pembelian_id');
     }
 
 }

@@ -8,12 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 class Pembelian extends Model
 {
 
-    protected $table = 'Pembelian';
+    protected $table = 'pembelian';
 
     use HasFactory;
 
     protected $fillable = [
-        'id_produk',
+        'produk_id',
         'unit',
         'harga_beli',
         'total_harga',
@@ -22,6 +22,6 @@ class Pembelian extends Model
 
     public function produk()
     {
-        return $this->belongsTo(Produk::class, 'id_produk');
+        return $this->hasMany(Produk::class, 'produk_id');
     }
 }
