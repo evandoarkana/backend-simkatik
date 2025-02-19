@@ -5,98 +5,72 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Kategori;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class KategoriController extends Controller
 {
     public function index()
     {
-        try {
-            $categories = Kategori::all();
-            return response()->json([
-                'status' => 'success',
-                'data' => $categories
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        $kategori = Kategori::orderBy('nama')->get();
+        return response()->json([
+            'status' => true,
+            'message' => 'Data kategori berhasil diambil',
+            'data' => $kategori
+        ]);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nama_kategori' => 'required|string|max:255|unique:kategori'
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string|max:255'
         ]);
 
-        try {
-            $Kategori = Kategori::create([
-                'nama_kategori' => $request->nama_kategori
-            ]);
-
+        if ($validator->fails()) {
             return response()->json([
-                'status' => 'success',
-                'message' => 'Kategori created successfully',
-                'data' => $Kategori
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+                'status' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
         }
+
+        $kategori = Kategori::create($request->all());
+        return response()->json([
+            'status' => true,
+            'message' => 'Kategori berhasil ditambahkan',
+            'data' => $kategori
+        ], 201);
     }
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'nama_kategori' => "required|string|max:255|unique:kategori,nama_kategori,{$id}"
+        $kategori = Kategori::findOrFail($id);
 
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string|max:255'
         ]);
 
-        try {
-            $Kategori = Kategori::findOrFail($id);
-            $Kategori->update([
-                'nama_kategori' => $request->nama_kategori
-            ]);
-
+        if ($validator->fails()) {
             return response()->json([
-                'status' => 'success',
-                'message' => 'Kategori updated successfully',
-                'data' => $Kategori
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+                'status' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
         }
+
+        $kategori->update($request->all());
+        return response()->json([
+            'status' => true,
+            'message' => 'Kategori berhasil diperbarui',
+            'data' => $kategori
+        ]);
     }
 
     public function destroy($id)
     {
-        try {
-            $Kategori = Kategori::findOrFail($id);
-
-            if ($Kategori->products()->count() > 0) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Cannot delete Kategori with existing products'
-                ], 400);
-            }
-
-            $Kategori->delete();
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Kategori deleted successfully'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        Kategori::findOrFail($id)->delete();
+        return response()->json([
+            'status' => true,
+            'message' => 'Kategori berhasil dihapus'
+        ]);
     }
 }
