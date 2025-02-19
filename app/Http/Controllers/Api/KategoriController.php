@@ -5,57 +5,98 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Kategori;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class KategoriController extends Controller
 {
     public function index()
     {
-        $kategori = Kategori::all();
-
-        if ($kategori->isEmpty()) {
+        try {
+            $categories = Kategori::all();
             return response()->json([
-                'message' => 'Tidak ada kategori yang tersedia.',
-            ], 404);
+                'status' => 'success',
+                'data' => $categories
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        return response()->json($kategori, 200);
     }
-
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'nama_kategori' => 'required|string|max:255',
+        $request->validate([
+            'nama_kategori' => 'required|string|max:255|unique:kategori'
         ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
-        }
+        try {
+            $Kategori = Kategori::create([
+                'nama_kategori' => $request->nama_kategori
+            ]);
 
-        $kategori = Kategori::create($request->all());
-        return response()->json($kategori, 201);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Kategori created successfully',
+                'data' => $Kategori
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $kategori = Kategori::find($id);
-        if (!$kategori) {
-            return response()->json(['message' => 'Kategori tidak ditemukan'], 404);
-        }
+        $request->validate([
+            'nama_kategori' => "required|string|max:255|unique:kategori,nama_kategori,{$id}"
 
-        $kategori->update($request->all());
-        return response()->json($kategori);
+        ]);
+
+        try {
+            $Kategori = Kategori::findOrFail($id);
+            $Kategori->update([
+                'nama_kategori' => $request->nama_kategori
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Kategori updated successfully',
+                'data' => $Kategori
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy($id)
     {
-        $kategori = Kategori::find($id);
-        if (!$kategori) {
-            return response()->json(['message' => 'Kategori tidak ditemukan'], 404);
-        }
+        try {
+            $Kategori = Kategori::findOrFail($id);
 
-        $kategori->delete();
-        return response()->json(['message' => 'Kategori berhasil dihapus']);
+            if ($Kategori->products()->count() > 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Cannot delete Kategori with existing products'
+                ], 400);
+            }
+
+            $Kategori->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Kategori deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
