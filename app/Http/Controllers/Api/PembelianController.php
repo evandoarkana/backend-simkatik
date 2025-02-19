@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pembelian;
 use App\Models\Produk;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
+use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -14,60 +14,61 @@ class PembelianController extends Controller
 {
     public function index()
     {
-        $pembelian = Pembelian::with('produk')->get();
-
-        return response()->json($pembelian);
+        try {
+            $pembelian = Pembelian::with('produk')->latest()->get();
+            return response()->json([
+                'status' => true,
+                'message' => 'Data pembelian berhasil diambil',
+                'data' => $pembelian
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan sistem',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'id_produk' => 'required|exists:produk,id',
-            'unit' => 'required|integer|min:1',
-            'harga_beli' => 'required|integer',
-            'tanggal_dibeli' => [
-                'required',
-                'date',
-                function ($attribute, $value, $fail) {
-                    $tanggal = Carbon::parse($value);
-                    $hariIni = now();
-
-                    if ($tanggal->gt($hariIni)) {
-                        $fail('Tanggal dibeli tidak boleh melebihi hari ini.');
-                    }
-                }
-            ],
+            'produk_id' => 'required|exists:produk,id',
+            'jumlah' => 'required|integer|min:1',
+            'harga_satuan' => 'required|numeric|min:0'
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
+            return response()->json([
+                'status' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
-        $produk = Produk::find($request->id_produk);
+        try {
+            DB::beginTransaction();
+            $pembelian = Pembelian::create($request->all());
 
-        $harga_beli_terbaru = Pembelian::where('id_produk', $produk->id)->latest('created_at')->value('harga_beli') ?? 0;
+            $produk = Produk::find($request->produk_id);
+            $produk->increment('stok', $request->jumlah);
 
-        if ($produk->harga_beli !== $harga_beli_terbaru) {
-            $produk->harga_beli = $harga_beli_terbaru;
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Pembelian berhasil ditambahkan dan stok diperbarui',
+                'data' => $pembelian
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat menambahkan pembelian',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $produk->stok += $request->unit;
-        $produk->save();
-
-        Pembelian::create([
-            'id_produk' => $produk->id,
-            'unit' => $request->unit,
-            'harga_beli' => $request->harga_beli,
-            'total_harga' => $request->unit * $request->harga_beli,
-            'tanggal_dibeli' => $request->tanggal_dibeli,
-        ]);
-
-        return response()->json([
-            "message" => "Pembelian berhasil",
-            "data" => $produk
-        ], 201);
     }
-
 
     public function printPdf(Request $request)
     {
