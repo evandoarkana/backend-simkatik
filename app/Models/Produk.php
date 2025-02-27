@@ -14,7 +14,6 @@ class Produk extends Model
     protected $fillable = [
         'nama_produk',
         'kategori_id',
-        'pembelian_id',
         'stok',
         'harga_jual',
         'gambar_produk'
@@ -22,14 +21,12 @@ class Produk extends Model
 
     public function kategori()
     {
-        return $this->belongsTo(Kategori::class, 'kategori_id');
+        return $this->belongsTo(Kategori::class);
     }
-
-
 
     public function pembelian()
     {
-        return $this->belongsTo(Pembelian::class, 'pembelian_id');
+        return $this->hasMany(Pembelian::class);
     }
 
 }

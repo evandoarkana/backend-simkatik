@@ -14,14 +14,14 @@ class Pembelian extends Model
 
     protected $fillable = [
         'produk_id',
-        'unit',
-        'harga_beli',
+        'quantity',
+        'satuan',
+        'isi_perbox',
         'total_harga',
-        'tanggal_dibeli'
     ];
 
     public function produk()
     {
-        return $this->hasMany(Produk::class, 'produk_id');
+        return $this->belongsTo(Produk::class, 'produk_id');
     }
 }
