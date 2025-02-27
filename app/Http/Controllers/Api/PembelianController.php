@@ -55,13 +55,11 @@ class PembelianController extends Controller
         try {
             DB::beginTransaction();
 
-            // Upload gambar jika ada
             $gambarPath = null;
             if ($request->hasFile('gambar_produk')) {
                 $gambarPath = $request->file('gambar_produk')->store('produk', 'public');
             }
 
-            // Simpan produk baru
             $produk = Produk::create([
                 'nama_produk' => $request->nama_produk,
                 'kategori_id' => $request->kategori_id,
@@ -73,14 +71,13 @@ class PembelianController extends Controller
                 'gambar_produk' => $gambarPath
             ]);
 
-            // **🔴 PERBAIKI Bagian Ini, Tambahkan harga_beli & isi_perbox ke Pembelian 🔴**
             $pembelian = Pembelian::create([
                 'produk_id' => $produk->id,
                 'jumlah' => $request->jumlah,
                 'satuan' => $request->satuan,
-                'harga_beli' => $request->harga_beli,  // **Pastikan masuk**
+                'harga_beli' => $request->harga_beli, 
                 'diskon' => $request->diskon ?? 0,
-                'isi_perbox' => $request->satuan === 'box' ? $request->isi_perbox : null,  // **Tambahkan ini**
+                'isi_perbox' => $request->satuan === 'box' ? $request->isi_perbox : null,
                 'total_harga' => ($request->harga_beli * $request->jumlah) - ($request->diskon ?? 0),
                 'tanggal' => now()->format('Y-m-d'),
             ]);
