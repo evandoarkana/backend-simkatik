@@ -17,6 +17,7 @@ class Pembelian extends Model
         'quantity',
         'satuan',
         'isi_perbox',
+        'harga_beli',
         'total_harga',
     ];
 

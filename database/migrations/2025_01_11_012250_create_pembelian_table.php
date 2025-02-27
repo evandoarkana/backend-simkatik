@@ -11,11 +11,11 @@ return new class extends Migration {
         Schema::create('pembelian', function (Blueprint $table) {
             $table->id();
             $table->foreignId('produk_id')->constrained('produk')->onDelete('cascade');
-            $table->integer('quantity');
+            $table->integer('quantity')->default(1);
             $table->enum('satuan', Satuan::values());
             $table->integer('isi_perbox')->nullable();
-            $table->integer('harga_beli');
-            $table->integer('total_harga');
+            $table->integer('harga_beli')->default(0);
+            $table->integer('total_harga')->default(0);
             $table->timestamps();
         });
     }
