@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum Satuan
+enum Satuan: String
 {
     case Pcs = "Pcs";
     case Box = "Box";
