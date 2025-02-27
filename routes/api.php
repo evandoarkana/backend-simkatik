@@ -76,18 +76,16 @@ Route::prefix('users')->group(function () {
                 });
 
                 Route::prefix('metode-pembayaran')->group(function () {
-                    Route::middleware('auth:sanctum')->group(function () {
                         Route::get('/', [MetodePembayaranController::class, 'index']);
                         Route::post('/', [MetodePembayaranController::class, 'store']);
                     });
-                });
 
-                Route::prefix('transaksi')->middleware('auth:sanctum')->group(function () {
+                Route::prefix('transaksi')->group(function () {
                     Route::get('/', [TransaksiController::class, 'index']);
                     Route::post('/', [TransaksiController::class, 'store']);
                 });
 
-                Route::prefix('transaksi-item')->middleware('auth:sanctum')->group(function () {
+                Route::prefix('transaksi-item')->group(function () {
                     Route::get('/', [TransaksiItemController::class, 'index']);
                     Route::delete('/{id}', [TransaksiItemController::class, 'destroy']);
                 });
