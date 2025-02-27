@@ -27,7 +27,7 @@ class KaryawanController extends Controller
         ]);
     }
 
-    public function register(Request $request)
+    public function store(Request $request)
     {
         if (Auth::user()->role !== UserRole::Admin->value) {
             return response()->json([
