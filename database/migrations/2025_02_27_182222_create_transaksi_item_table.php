@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('transaksi_id')->constrained('transaksi')->onDelete('cascade');
             $table->foreignId('produk_id')->constrained('produk')->onDelete('cascade');
             $table->integer('jumlah');
-            $table->integer('subtotal');
+            $table->integer('subtotal')->default(0)->change();
             $table->timestamps();
         });
     }
