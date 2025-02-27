@@ -10,7 +10,6 @@ use App\Http\Controllers\Api\KaryawanController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
-
     Route::post('/login', [AuthController::class, 'login']);
 
     Route::get('/verify-email/{id}/{hash}', [AuthController::class, 'verifyEmail'])
@@ -37,7 +36,6 @@ Route::prefix('users')->group(function () {
         Route::prefix('admin')->group(function () {
             Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
                 Route::prefix('karyawan')->group(function () {
-                    Route::post('/', [AuthController::class, 'register']);
                     Route::get('/', [KaryawanController::class, 'index']);
                     Route::post('/', [KaryawanController::class, 'store']);
                     Route::put('/{id}', [KaryawanController::class, 'update']);
