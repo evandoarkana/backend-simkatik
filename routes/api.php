@@ -4,9 +4,11 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\KategoriController;
 use App\Http\Controllers\Api\PembelianController;
-use App\Http\Controllers\Api\PenjualanController;
 use App\Http\Controllers\Api\ProdukController;
 use App\Http\Controllers\Api\KaryawanController;
+use App\Http\Controllers\Api\MetodePembayaranController;
+use App\Http\Controllers\Api\TransaksiController;
+use App\Http\Controllers\Api\TransaksiItemController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -71,6 +73,23 @@ Route::prefix('users')->group(function () {
                     Route::get('/', [PembelianController::class, 'index']);
                     Route::post('/', [PembelianController::class, 'store']);
                     Route::get('pembelian/print-pdf', [PembelianController::class, 'printPdf']);
+                });
+
+                Route::prefix('metode-pembayaran')->group(function () {
+                    Route::middleware('auth:sanctum')->group(function () {
+                        Route::get('/', [MetodePembayaranController::class, 'index']);
+                        Route::post('/', [MetodePembayaranController::class, 'store']);
+                    });
+                });
+
+                Route::prefix('transaksi')->middleware('auth:sanctum')->group(function () {
+                    Route::get('/', [TransaksiController::class, 'index']);
+                    Route::post('/', [TransaksiController::class, 'store']);
+                });
+
+                Route::prefix('transaksi-item')->middleware('auth:sanctum')->group(function () {
+                    Route::get('/', [TransaksiItemController::class, 'index']);
+                    Route::delete('/{id}', [TransaksiItemController::class, 'destroy']);
                 });
             });
         });
