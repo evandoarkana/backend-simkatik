@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Pembelian;
 use App\Models\Produk;
 use Barryvdh\DomPDF\Facade\Pdf;
-use DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class PembelianController extends Controller
@@ -33,9 +33,15 @@ class PembelianController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'produk_id' => 'required|exists:produk,id',
+            'nama_produk' => 'required|string|unique:produk,nama_produk',
+            'kategori_id' => 'required|exists:kategori,id',
             'jumlah' => 'required|integer|min:1',
-            'harga_satuan' => 'required|numeric|min:0'
+            'satuan' => 'required|in:pcs,box',
+            'isi_perbox' => 'required_if:satuan,box|nullable|integer|min:1',
+            'harga_beli' => 'required|numeric|min:0',
+            'harga_jual' => 'required|numeric|min:0',
+            'diskon' => 'nullable|numeric|min:0',
+            'gambar_produk' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ]);
 
         if ($validator->fails()) {
@@ -48,27 +54,57 @@ class PembelianController extends Controller
 
         try {
             DB::beginTransaction();
-            $pembelian = Pembelian::create($request->all());
 
-            $produk = Produk::find($request->produk_id);
-            $produk->increment('stok', $request->jumlah);
+            // Upload gambar jika ada
+            $gambarPath = null;
+            if ($request->hasFile('gambar_produk')) {
+                $gambarPath = $request->file('gambar_produk')->store('produk', 'public');
+            }
+
+            // Simpan produk baru
+            $produk = Produk::create([
+                'nama_produk' => $request->nama_produk,
+                'kategori_id' => $request->kategori_id,
+                'stok' => $request->jumlah,
+                'harga_jual' => $request->harga_jual,
+                'harga_beli' => $request->harga_beli,
+                'diskon' => $request->diskon ?? 0,
+                'isi_perbox' => $request->satuan === 'box' ? $request->isi_perbox : null,
+                'gambar_produk' => $gambarPath
+            ]);
+
+            // **🔴 PERBAIKI Bagian Ini, Tambahkan harga_beli & isi_perbox ke Pembelian 🔴**
+            $pembelian = Pembelian::create([
+                'produk_id' => $produk->id,
+                'jumlah' => $request->jumlah,
+                'satuan' => $request->satuan,
+                'harga_beli' => $request->harga_beli,  // **Pastikan masuk**
+                'diskon' => $request->diskon ?? 0,
+                'isi_perbox' => $request->satuan === 'box' ? $request->isi_perbox : null,  // **Tambahkan ini**
+                'total_harga' => ($request->harga_beli * $request->jumlah) - ($request->diskon ?? 0),
+                'tanggal' => now()->format('Y-m-d'),
+            ]);
 
             DB::commit();
 
             return response()->json([
                 'status' => true,
-                'message' => 'Pembelian berhasil ditambahkan dan stok diperbarui',
-                'data' => $pembelian
+                'message' => 'Produk dan pembelian berhasil ditambahkan',
+                'data' => [
+                    'produk' => $produk,
+                    'pembelian' => $pembelian
+                ]
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => 'Terjadi kesalahan saat menambahkan pembelian',
+                'message' => 'Terjadi kesalahan saat menyimpan pembelian',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
+
 
     public function printPdf(Request $request)
     {
@@ -76,13 +112,13 @@ class PembelianController extends Controller
 
         if ($request->has('nama_produk')) {
             $query->whereHas('produk', function ($q) use ($request) {
-                $q->where('nama_produk', 'like', "%{$request->nama_produk}%");
+                $q->where('nama', 'like', "%{$request->nama_produk}%");
             });
         }
 
         if ($request->has('bulan') && $request->has('tahun')) {
-            $query->whereMonth('tanggal_dibeli', $request->bulan)
-                ->whereYear('tanggal_dibeli', $request->tahun);
+            $query->whereMonth('tanggal', $request->bulan)
+                ->whereYear('tanggal', $request->tahun);
         }
 
         $pembelian = $query->get();
@@ -98,5 +134,62 @@ class PembelianController extends Controller
         }
 
         return $pdf->stream('laporan_pembelian.pdf');
+    }
+
+    public function tambahStok(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'produk_id' => 'required|exists:produk,id',
+            'jumlah' => 'required|integer|min:1',
+            'satuan' => 'required|in:pcs,box',
+            'harga_beli' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $produk = Produk::findOrFail($request->produk_id);
+
+            $jumlahTambahan = $request->satuan === 'box'
+                ? $request->jumlah * $produk->isi_perbox
+                : $request->jumlah;
+
+            $pembelian = Pembelian::create([
+                'produk_id' => $produk->id,
+                'jumlah' => $request->jumlah,
+                'satuan' => $request->satuan,
+                'harga_beli' => $request->harga_beli,
+                'total_harga' => $request->harga_beli * $request->jumlah,
+                'tanggal' => now()->format('Y-m-d'),
+            ]);
+
+            $produk->increment('stok', $jumlahTambahan);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Stok produk berhasil ditambahkan!',
+                'data' => [
+                    'produk' => $produk,
+                    'pembelian' => $pembelian
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat menambahkan stok',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

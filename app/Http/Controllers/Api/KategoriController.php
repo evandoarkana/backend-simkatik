@@ -11,7 +11,7 @@ class KategoriController extends Controller
 {
     public function index()
     {
-        $kategori = Kategori::orderBy('nama')->get();
+        $kategori = Kategori::orderBy('nama_kategori')->get();
         return response()->json([
             'status' => true,
             'message' => 'Data kategori berhasil diambil',
@@ -22,7 +22,7 @@ class KategoriController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'nama' => 'required|string|max:255'
+            'nama_kategori' => 'required|string|max:255'
         ]);
 
         if ($validator->fails()) {
@@ -46,7 +46,7 @@ class KategoriController extends Controller
         $kategori = Kategori::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'nama' => 'required|string|max:255'
+            'nama_kategori' => 'required|string|max:255'
         ]);
 
         if ($validator->fails()) {

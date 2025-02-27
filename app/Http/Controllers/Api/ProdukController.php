@@ -16,9 +16,11 @@ class ProdukController extends Controller
         $produk = Produk::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'nama' => 'sometimes|required|string|max:255',
+            'nama_produk' => 'sometimes|required|string|max:255|unique:produk,nama_produk,' . $id,
             'kategori_id' => 'sometimes|required|exists:kategori,id',
-            'harga' => 'sometimes|required|numeric|min:0'
+            'harga_jual' => 'sometimes|required|numeric|min:0',
+            'diskon' => 'sometimes|integer|min:0|max:100',
+            'gambar_produk' => 'sometimes|nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -29,7 +31,8 @@ class ProdukController extends Controller
             ], 422);
         }
 
-        $produk->update($request->all());
+        $produk->update($request->only(['nama_produk', 'kategori_id', 'harga_jual', 'diskon', 'gambar_produk']));
+
         return response()->json([
             'status' => true,
             'message' => 'Data produk berhasil diperbarui',
@@ -40,7 +43,13 @@ class ProdukController extends Controller
     public function destroy($id)
     {
         $produk = Produk::findOrFail($id);
-        $produk->pembelian()->update(['produk_id' => null]);
+
+        if ($produk->pembelian()->exists()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Produk tidak dapat dihapus karena masih memiliki riwayat pembelian'
+            ], 400);
+        }
 
         $produk->delete();
 
@@ -55,7 +64,10 @@ class ProdukController extends Controller
         $produk = Produk::all();
 
         if ($produk->isEmpty()) {
-            return response()->json(['message' => 'Tidak ada produk yang ditemukan.'], 404);
+            return response()->json([
+                'status' => false,
+                'message' => 'Tidak ada produk yang ditemukan.'
+            ], 404);
         }
 
         $pdf = Pdf::loadView('produk.pdf', compact('produk'));
