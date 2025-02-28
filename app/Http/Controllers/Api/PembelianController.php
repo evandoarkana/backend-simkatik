@@ -138,7 +138,7 @@ class PembelianController extends Controller
         $validator = Validator::make($request->all(), [
             'produk_id' => 'required|exists:produk,id',
             'jumlah' => 'required|integer|min:1',
-            'satuan' => 'required|in:pcs,box',
+            'satuan' => 'required|in:Pcs,Box',
             'harga_beli' => 'required|numeric|min:0',
         ]);
 
