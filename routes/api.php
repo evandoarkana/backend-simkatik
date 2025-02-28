@@ -54,7 +54,7 @@ Route::prefix('users')->group(function () {
                 });
 
                 Route::prefix('kategori')->group(function () {
-                    Route::get('/', [KategoriController::class, 'index']);
+                    Route::post('/', [KategoriController::class, 'index']);
                     Route::get('/{id}', [KategoriController::class, 'show']);
                     Route::post('/', [KategoriController::class, 'store']);
                     Route::put('/{id}', [KategoriController::class, 'update']);
