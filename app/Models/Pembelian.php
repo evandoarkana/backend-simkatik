@@ -14,7 +14,7 @@ class Pembelian extends Model
 
     protected $fillable = [
         'produk_id',
-        'quantity',
+        'jumlah',
         'satuan',
         'isi_perbox',
         'harga_beli',
