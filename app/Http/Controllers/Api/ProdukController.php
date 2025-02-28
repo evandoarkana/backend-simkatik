@@ -11,12 +11,31 @@ use Illuminate\Support\Facades\Validator;
 
 class ProdukController extends Controller
 {
+    public function index()
+    {
+        try {
+            $produk = Produk::with('kategori')->latest()->get();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data produk berhasil diambil',
+                'data' => $produk
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan sistem',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function update(Request $request, $id)
     {
         $produk = Produk::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'nama_produk' => 'sometimes|required|string|max:255|unique:produk,nama_produk,' . $id,
+            'nama_produk' => "sometimes|required|string|max:255|unique:produk,nama_produk,{$id}",
             'kategori_id' => 'sometimes|required|exists:kategori,id',
             'harga_jual' => 'sometimes|required|numeric|min:0',
             'diskon' => 'sometimes|integer|min:0|max:100',
