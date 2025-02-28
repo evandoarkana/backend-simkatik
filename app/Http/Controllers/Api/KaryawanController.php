@@ -61,6 +61,7 @@ class KaryawanController extends Controller
         $user->password = Hash::make($request->password);
         $user->role = UserRole::Karyawan->value;
         $user->profile_picture = 'default.jpg';
+        $user->email_verified_at = now();
 
         if ($request->hasFile('profile_picture')) {
             $file = $request->file('profile_picture');
@@ -71,26 +72,15 @@ class KaryawanController extends Controller
 
         $user->save();
 
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            Carbon::now()->addMinutes(60),
-            [
-                'id' => $user->id,
-                'hash' => sha1($user->email)
-            ]
-        );
-
         return response()->json([
             'status' => 'success',
-            'message' => 'Registrasi berhasil. Silakan cek email untuk verifikasi.',
+            'message' => 'Registrasi berhasil. Akun telah diverifikasi secara otomatis.',
             'data' => [
                 'user' => $user
             ],
-            'verification_url' => $verificationUrl,
             'code' => 201
         ], 201);
     }
-
 
     public function show($id): JsonResponse
     {
