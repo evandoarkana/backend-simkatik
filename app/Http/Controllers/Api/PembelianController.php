@@ -36,8 +36,8 @@ class PembelianController extends Controller
             'nama_produk' => 'required|string|unique:produk,nama_produk',
             'kategori_id' => 'required|exists:kategori,id',
             'jumlah' => 'required|integer|min:1',
-            'satuan' => 'required|in:pcs,box',
-            'isi_perbox' => 'required_if:satuan,box|nullable|integer|min:1',
+            'satuan' => 'required|in:Pcs,Box',
+            'isi_perbox' => 'required_if:satuan,Box|nullable|integer|min:1',
             'harga_beli' => 'required|numeric|min:0',
             'harga_jual' => 'required|numeric|min:0',
             'diskon' => 'nullable|numeric|min:0',
@@ -139,6 +139,7 @@ class PembelianController extends Controller
             'produk_id' => 'required|exists:produk,id',
             'jumlah' => 'required|integer|min:1',
             'satuan' => 'required|in:Pcs,Box',
+            'isi_perbox' => 'required_if:satuan,Box|nullable|integer|min:1',
             'harga_beli' => 'required|numeric|min:0',
         ]);
 
