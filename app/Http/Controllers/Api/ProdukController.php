@@ -63,10 +63,10 @@ class ProdukController extends Controller
     {
         $produk = Produk::findOrFail($id);
 
-        if ($produk->pembelian()->exists()) {
+        if ($produk->stock > 0) {
             return response()->json([
                 'status' => false,
-                'message' => 'Produk tidak dapat dihapus karena masih memiliki riwayat pembelian'
+                'message' => 'Produk tidak dapat dihapus karena stok masih tersedia.'
             ], 400);
         }
 
@@ -77,6 +77,19 @@ class ProdukController extends Controller
             'message' => 'Data produk berhasil dihapus'
         ]);
     }
+
+    public function restore($id)
+    {
+        $produk = Produk::onlyTrashed()->findOrFail($id);
+        $produk->restore();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Produk berhasil dikembalikan',
+            'data' => $produk
+        ]);
+    }
+
 
     public function printPdf()
     {

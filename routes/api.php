@@ -65,20 +65,21 @@ Route::prefix('users')->group(function () {
                     Route::get('/', [ProdukController::class, 'index']);
                     Route::put('/{id}', [ProdukController::class, 'update']);
                     Route::delete('/{id}', [ProdukController::class, 'destroy']);
+                    Route::post('/{id}/restore', [ProdukController::class, 'restore']);
                     Route::get('/print-pdf', [ProdukController::class, 'printPdf']);
-                    Route::put('/produk/{id}/tambah-stok', [ProdukController::class, 'tambahStok']);
                 });
 
                 Route::prefix('pembelian')->group(function () {
                     Route::get('/', [PembelianController::class, 'index']);
                     Route::post('/', [PembelianController::class, 'store']);
                     Route::get('pembelian/print-pdf', [PembelianController::class, 'printPdf']);
+                    Route::put('/{id}/tambah-stok', [PembelianController::class, 'tambahStok']);
                 });
 
                 Route::prefix('metode-pembayaran')->group(function () {
-                        Route::get('/', [MetodePembayaranController::class, 'index']);
-                        Route::post('/', [MetodePembayaranController::class, 'store']);
-                    });
+                    Route::get('/', [MetodePembayaranController::class, 'index']);
+                    Route::post('/', [MetodePembayaranController::class, 'store']);
+                });
 
                 Route::prefix('transaksi')->group(function () {
                     Route::get('/', [TransaksiController::class, 'index']);

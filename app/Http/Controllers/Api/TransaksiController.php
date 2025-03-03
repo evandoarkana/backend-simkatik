@@ -58,7 +58,18 @@ class TransaksiController extends Controller
 
             foreach ($request->items as $item) {
                 $produk = Produk::find($item['produk_id']);
+                if ($produk->stok < $item['jumlah']) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Stok produk {$produk->nama_produk} tidak mencukupi",
+                    ], 400);
+                }
+
+                $produk->stok -= $item['jumlah'];
+                $produk->save();
+
                 $subtotal = $produk->harga_jual * $item['jumlah'];
+
 
                 TransaksiItem::create([
                     'transaksi_id' => $transaksi->id,

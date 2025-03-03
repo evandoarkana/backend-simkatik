@@ -37,7 +37,7 @@ class PembelianController extends Controller
             'kategori_id' => 'required|exists:kategori,id',
             'jumlah' => 'required|integer|min:1',
             'satuan' => 'required|in:Pcs,Box',
-            'isi_perbox' => 'required_if:satuan,Box|nullable|integer|min:1',
+            'isi_perbox' => 'required_if:Satuan,Box|nullable|integer|min:1',
             'harga_beli' => 'required|numeric|min:0',
             'harga_jual' => 'required|numeric|min:0',
             'diskon' => 'nullable|numeric|min:0',
@@ -67,7 +67,7 @@ class PembelianController extends Controller
                 'harga_jual' => $request->harga_jual,
                 'harga_beli' => $request->harga_beli,
                 'diskon' => $request->diskon ?? 0,
-                'isi_perbox' => $request->satuan === 'box' ? $request->isi_perbox : null,
+                'isi_perbox' => $request->satuan === 'Box' ? $request->isi_perbox : null,
                 'gambar_produk' => $gambarPath
             ]);
 
@@ -77,7 +77,7 @@ class PembelianController extends Controller
                 'satuan' => $request->satuan,
                 'harga_beli' => $request->harga_beli, 
                 'diskon' => $request->diskon ?? 0,
-                'isi_perbox' => $request->satuan === 'box' ? $request->isi_perbox : null,
+                'isi_perbox' => $request->satuan === 'Box' ? $request->isi_perbox : null,
                 'total_harga' => ($request->harga_beli * $request->jumlah) - ($request->diskon ?? 0),
                 'tanggal' => now()->format('Y-m-d'),
             ]);
