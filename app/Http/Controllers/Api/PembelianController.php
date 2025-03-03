@@ -156,7 +156,7 @@ class PembelianController extends Controller
 
             $produk = Produk::findOrFail($request->produk_id);
 
-            $jumlahTambahan = $request->satuan === 'box'
+            $jumlahTambahan = $request->satuan === 'Box'
                 ? $request->jumlah * $produk->isi_perbox
                 : $request->jumlah;
 
@@ -164,6 +164,7 @@ class PembelianController extends Controller
                 'produk_id' => $produk->id,
                 'jumlah' => $request->jumlah,
                 'satuan' => $request->satuan,
+                'isi_perbox' => $request->satuan === 'Box' ? $request->isi_perbox : null,
                 'harga_beli' => $request->harga_beli,
                 'total_harga' => $request->harga_beli * $request->jumlah,
                 'tanggal' => now()->format('Y-m-d'),

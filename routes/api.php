@@ -73,7 +73,7 @@ Route::prefix('users')->group(function () {
                     Route::get('/', [PembelianController::class, 'index']);
                     Route::post('/', [PembelianController::class, 'store']);
                     Route::get('pembelian/print-pdf', [PembelianController::class, 'printPdf']);
-                    Route::put('/{id}/tambah-stok', [PembelianController::class, 'tambahStok']);
+                    Route::post('/{id}/tambah-stok', [PembelianController::class, 'tambahStok']);
                 });
 
                 Route::prefix('metode-pembayaran')->group(function () {
