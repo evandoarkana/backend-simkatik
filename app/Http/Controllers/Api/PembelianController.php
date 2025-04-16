@@ -40,7 +40,16 @@ class PembelianController extends Controller
             'isi_perbox' => 'required_if:Satuan,Box|nullable|integer|min:1',
             'harga_beli' => 'required|numeric|min:0',
             'harga_jual' => 'required|numeric|min:0',
-            'diskon' => 'nullable|numeric|min:0',
+            'diskon' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value > $request->harga_jual) {
+                        $fail('Diskon tidak boleh lebih besar dari harga jual.');
+                    }
+                }
+            ],
             'gambar_produk' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ]);
 
@@ -68,6 +77,7 @@ class PembelianController extends Controller
                 'harga_jual' => $request->harga_jual,
                 'harga_beli' => $request->harga_beli,
                 'diskon' => $request->diskon,
+                'harga_final' => $request->harga_jual - ($request->diskon ?? 0),
                 'isi_perbox' => $request->satuan === 'Box' ? $request->isi_perbox : null,
                 'gambar_produk' => $gambarPath
             ]);

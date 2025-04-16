@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->integer('harga_jual');
             $table->integer('harga_beli');
             $table->integer('diskon')->nullable();
+            $table->integer('harga_final')->after('diskon')->default(0);
             $table->string('gambar_produk')->nullable();
             $table->softDeletes();
             $table->timestamps();

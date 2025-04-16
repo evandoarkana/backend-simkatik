@@ -19,6 +19,7 @@ class Produk extends Model
         'harga_jual',
         'harga_beli',
         'diskon',
+        'harga_final',
         'gambar_produk'
     ];
 
