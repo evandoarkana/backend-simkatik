@@ -60,25 +60,27 @@ class PembelianController extends Controller
                 $gambarPath = $request->file('gambar_produk')->store('produk', 'public');
             }
 
+
             $produk = Produk::create([
                 'nama_produk' => $request->nama_produk,
                 'kategori_id' => $request->kategori_id,
                 'stok' => $request->jumlah,
                 'harga_jual' => $request->harga_jual,
                 'harga_beli' => $request->harga_beli,
-                'diskon' => $request->diskon ?? 0,
+                'diskon' => $request->diskon,
                 'isi_perbox' => $request->satuan === 'Box' ? $request->isi_perbox : null,
                 'gambar_produk' => $gambarPath
             ]);
+
 
             $pembelian = Pembelian::create([
                 'produk_id' => $produk->id,
                 'jumlah' => $request->jumlah,
                 'satuan' => $request->satuan,
-                'harga_beli' => $request->harga_beli, 
+                'harga_beli' => $request->harga_beli,
                 'diskon' => $request->diskon ?? 0,
                 'isi_perbox' => $request->satuan === 'Box' ? $request->isi_perbox : null,
-                'total_harga' => ($request->harga_beli * $request->jumlah) - ($request->diskon ?? 0),
+                'total_harga' => $request->harga_beli * $request->jumlah - ($request->diskon ?? 0),
                 'tanggal' => now()->format('Y-m-d'),
             ]);
 
@@ -101,7 +103,6 @@ class PembelianController extends Controller
             ], 500);
         }
     }
-
 
     public function printPdf(Request $request)
     {

@@ -19,7 +19,7 @@ class DashboardController extends Controller
             ->whereMonth('tanggal_terjual', $bulan)
             ->sum('keuntungan');
 
-        $bulanNama = Carbon::createFromFormat('m', $bulan)->format('F');
+        $bulanNama = Carbon::createFromFormat(  'm', $bulan)->format('F');
 
         return response()->json([
             'status' => 'sukses',

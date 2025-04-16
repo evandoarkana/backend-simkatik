@@ -38,7 +38,7 @@ class ProdukController extends Controller
             'nama_produk' => "sometimes|required|string|max:255|unique:produk,nama_produk,{$id}",
             'kategori_id' => 'sometimes|required|exists:kategori,id',
             'harga_jual' => 'sometimes|required|numeric|min:0',
-            'diskon' => 'sometimes|integer|min:0|max:100',
+            'diskon' => 'sometimes|numeric|min:0',
             'gambar_produk' => 'sometimes|nullable|string'
         ]);
 
